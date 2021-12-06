@@ -1,6 +1,7 @@
 package com.example.tirepressure
 
 import android.util.Log
+import io.realm.RealmList
 import kotlin.collections.ArrayList
 
 class Calculation {
@@ -15,7 +16,7 @@ class Calculation {
         latDiff = Math.round(latDiff * Math.pow(10.0, 8.0)) / Math.pow(10.0, 8.0)
 
         // 経度の差
-        var lonDiff = Math.abs(lat1 - lat2)
+        var lonDiff = Math.abs(lon1 - lon2)
         lonDiff = Math.round(lonDiff * Math.pow(10.0, 8.0)) / Math.pow(10.0, 8.0)
 
         // 距離
@@ -36,7 +37,7 @@ class Calculation {
     }
 
     // 最頻値を計算
-    fun calcMode(s: ArrayList<Double>): Double{
+    fun calcMode(s: RealmList<Double>): Double{
 
         // 速度を昇順でsort
         s.sort()
@@ -50,7 +51,7 @@ class Calculation {
 
         for(i in 1..s.size-1){
             // truncateSpeedの値以上で求める
-            if(s.get(i) >= truncateSpeed) {
+            if(s.get(i)!! >= truncateSpeed) {
                 // 1つ前の値と同じ時
                 if(s.get(i) == s.get(i-1)){
                     count += 1
@@ -60,7 +61,7 @@ class Calculation {
                     // 今まで出た回数が多い場合
                     if(count >= maxCount){
                         maxCount = count
-                        mode =s.get(i-1)
+                        mode = s.get(i-1)!!
                         count = 0
                     }
                 }
@@ -71,11 +72,11 @@ class Calculation {
     }
 
     // 中央値を求める
-    fun calcMedian(s: ArrayList<Double>): Double{
+    fun calcMedian(s: RealmList<Double>): Double{
         s.sort()
         val index: Int = s.size/2
         val median = s.get(index)
 
-        return median
+        return median!!
     }
 }

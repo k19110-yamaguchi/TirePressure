@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/d_priod"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="計測期間:"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/d_naturalSpeedText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="自然に漕いでいた時の速度:"
+        app:layout_constraintStart_toStartOf="@+id/d_priod"
+        app:layout_constraintTop_toBottomOf="@+id/d_priod" />
+
+    <TextView
+        android:id="@+id/d_latitude"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="緯度\n"
+        app:layout_constraintStart_toStartOf="@+id/d_naturalSpeedText"
+        app:layout_constraintTop_toBottomOf="@+id/d_naturalSpeedText" />
+
+    <TextView
+        android:id="@+id/d_longitude"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="経度\n"
+        app:layout_constraintStart_toEndOf="@+id/d_latitude"
+        app:layout_constraintTop_toTopOf="@+id/d_latitude" />
+
+    <TextView
+        android:id="@+id/d_speed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="速度(km/h)\n"
+        app:layout_constraintStart_toEndOf="@+id/d_longitude"
+        app:layout_constraintTop_toTopOf="@+id/d_longitude" />
+
+    <TextView
+        android:id="@+id/d_naturalSpeed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TextView"
+        app:layout_constraintStart_toEndOf="@+id/d_naturalSpeedText"
+        app:layout_constraintTop_toTopOf="@+id/d_naturalSpeedText" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

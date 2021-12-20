@@ -1,10 +1,13 @@
 package com.example.tirepressure
 
+import android.app.AlertDialog
+import android.content.Context
 import android.text.format.DateFormat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Adapter
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.OrderedRealmCollection
@@ -13,14 +16,19 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 // RecyclerViewにRealmデータを表示する
-class DataListAdapter(data: OrderedRealmCollection<DataList>) :
+class DataListAdapter(data: OrderedRealmCollection<DataList>, context: Context) :
     RealmRecyclerViewAdapter<DataList, DataListAdapter.ViewHolder>(data, true){
+    // データベース用class
+    private val database = Database()
+    private val dbActivity = DatabaseActivity()
+    private val ct = context
 
         init {
             setHasStableIds(true)
         }
 
     class ViewHolder(cell: View) : RecyclerView.ViewHolder(cell){
+        val id: TextView = cell.findViewById(R.id.d_id)
         val priod: TextView = cell.findViewById(R.id.d_priod)
         val naturalSpeed: TextView = cell.findViewById(R.id.d_naturalSpeed)
         val latitude: TextView = cell.findViewById(R.id.d_latitude)
@@ -39,6 +47,7 @@ class DataListAdapter(data: OrderedRealmCollection<DataList>) :
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val dataList: DataList? = getItem(position)
 
+        holder.id.text = "id: " + dataList?.id
         holder.priod.text = dataList?.startDate + " 〜 " + dataList?.stopDate
         holder.naturalSpeed.text = dataList?.naturalSpeed.toString() + "km/h"
         var text_lat = "緯度（°）\n"
@@ -63,6 +72,12 @@ class DataListAdapter(data: OrderedRealmCollection<DataList>) :
         holder.latitude.text = text_lat
         holder.longitude.text = text_lon
         holder.speed.text = text_s
+
+        holder.itemView.setOnClickListener {
+
+            dbActivity.alertDialog(dataList.id, ct)
+
+        }
     }
 
     override fun getItemId(position: Int): Long {

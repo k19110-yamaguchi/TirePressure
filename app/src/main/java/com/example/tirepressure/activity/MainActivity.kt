@@ -67,7 +67,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
         // Realmのインスタンスを取得
         database.create()
 
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
 
@@ -189,10 +188,11 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
         // 測定開始から一週間のデータを抽出
         var judge = true
-        var id = 1L
-        var begin_date = ""
         var end_id = 0L
-        while(judge){
+        val max_id = database.getMaxId()
+        var begin_date = ""
+        var measurementPeriod = true
+        for(id in 1L..max_id){
             var data = database.getData(id)
             if(data != null){
                 // 測定を始めた日時
@@ -206,40 +206,40 @@ class MainActivity : AppCompatActivity(), LocationListener {
                         end_id = data.id
 
                     }else{
-                        judge = false
+                        measurementPeriod = false
+                        break
                     }
                 }
             }
         }
-        // 今までの自然に漕いでいた時の速度を取得
-        nsList.clear()
-        id = 1L
-        judge = true
-        while(judge){
-            var data = database.getData(id)
-            var ns = data?.naturalSpeed
-            Log.d("locationStop", "id:" + id + "ns:" + ns)
-            if(id > end_id){
-                judge = false
-            }else{
-                nsList.add(ns)
-                id++
 
+        // 測定開始から1週間以内
+        if(measurementPeriod){
+            messageText = "現在計測期間中"
+
+        // 測定開始から１週間後
+        }else{
+            // 今までの自然に漕いでいた時の速度を取得
+            nsList.clear()
+            for(id in 1L .. end_id){
+                var data = database.getData(id)
+                var ns = data?.naturalSpeed
+                Log.d("locationStop", "id:" + id + "ns:" + ns)
+                if(ns != null){
+                    nsList.add(ns)
+                }
+            }
+            // この速度以下になったら通知する
+            var alartSpeed = calculation.calcAlartSpeed(nsList, 1)
+            Log.d("locationStop", "alartSpeed:" + alartSpeed)
+
+            if(naturalSpeed >= alartSpeed){
+                messageText = "タイヤの空気圧に\n問題なし！"
+            }else{
+                messageText = "タイヤに空気を\n入れたほうがいいよ！"
             }
         }
 
-
-        // この速度以下になったら通知する
-        var alartSpeed = calculation.calcAlartSpeed(nsList, 1)
-        Log.d("locationStop", "alartSpeed:" + alartSpeed)
-
-
-
-        if(naturalSpeed >= alartSpeed){
-            messageText = "タイヤの空気圧に\n問題なし！"
-        }else{
-            messageText = "タイヤに空気を\n入れたほうがいいよ！"
-        }
         binding.message.setText(messageText)
 
         dataText = "自然に漕いでいた時の速度"

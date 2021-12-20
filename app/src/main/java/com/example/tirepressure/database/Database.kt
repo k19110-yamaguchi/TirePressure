@@ -1,5 +1,6 @@
 package com.example.tirepressure
 
+import android.util.Log
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmResults
@@ -97,6 +98,17 @@ class Database {
 
             }
         }
+    }
+
+    fun getMaxId(): Long{
+        var maxId = 0L
+        realm.executeTransaction{db ->
+            maxId = db.where<DataList>().max("id")!!.toLong()
+
+        }
+
+        return maxId
+
     }
 
     // データベースを閉じる

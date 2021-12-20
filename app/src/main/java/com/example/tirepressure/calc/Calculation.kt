@@ -79,4 +79,52 @@ class Calculation {
 
         return median!!
     }
+
+    // 平均を求める
+    fun calcAve(list: RealmList<Double>): Double{
+        var sum = 0.0
+        for(i in 1..list.size-1){
+            sum += list[i]!!
+
+        }
+        var ave = sum / list.size
+        return ave
+
+    }
+
+    // 標準偏差を求める
+    fun calcSd(ave: Double, list: RealmList<Double>): Double{
+        var sum = 0.0
+        for(i in 1..list.size-1){
+            sum += Math.pow((list[i]!! - ave), 2.0)
+
+        }
+        val sd = Math.sqrt(sum/list.size)
+
+        return sd
+    }
+
+    // この速度以下になったら通知する速度を求める
+    fun calcAlartSpeed(ns: RealmList<Double>, n: Int): Double {
+        var test = false
+        var als = 18.0
+
+        if (!test) {
+            val ave = calcAve(ns)
+            val sd = calcSd(ave, ns)
+            als = ave - (n * sd)
+            als = Math.round(als * 10.0).toDouble() / 10
+            var msg = n.toString() + "σ: " + (n * sd)
+            Log.d("calcAlartSpeed", msg)
+        }
+
+        return als
+    }
+
+    fun LongtoString(s_date: String): Long{
+        var l_date = 0L
+        return l_date
+    }
+
 }
+

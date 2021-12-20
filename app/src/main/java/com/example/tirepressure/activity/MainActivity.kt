@@ -7,37 +7,26 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
-import android.os.Build
 import android.provider.Settings
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.Gravity
 import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.tirepressure.databinding.ActivityMainBinding
-import io.realm.Realm
 import io.realm.RealmList
-import io.realm.kotlin.createObject
-import io.realm.kotlin.where
 import java.text.SimpleDateFormat
-import java.time.LocalDateTime
 
 class MainActivity : AppCompatActivity(), LocationListener {
     // ActivityMainに対応するviewBindingを生成
     private lateinit var binding: ActivityMainBinding
     //　locationManager
     private lateinit var locationManager: LocationManager
-    // Realmクラスのプロパティを用意
-    private lateinit var realm: Realm
-
 
     // 測定中かどうか
     private var measurement = false
-    // この速度以下になったら通知する
-    private val alartSpeed = 18.0
     // Toastで表示するtext
     private var toastText = ""
     // messageに表示するtext
@@ -60,17 +49,24 @@ class MainActivity : AppCompatActivity(), LocationListener {
     var timeArr: RealmList<Long> = RealmList()
     // 速度のリスト
     var speedArr: RealmList<Double> = RealmList()
+    // test用
+    var testNS: RealmList<Double> = RealmList()
+    // 今までの自然に漕いでいた時のリスト
+    var nsList :RealmList<Double> = RealmList()
     // 自然に漕いでいるときの速度
     var naturalSpeed: Double = 0.0
 
-    // class
+    // 計算用class
     private val calculation = Calculation()
+    // データベース用class
+    private val database = Database()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Realmのインスタンスを取得
-        realm = Realm.getDefaultInstance()
+        database.create()
+
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         val view = binding.root
@@ -91,21 +87,12 @@ class MainActivity : AppCompatActivity(), LocationListener {
             // 測定外の時
             }else{
                 // 初期化
-                latitudeArr.clear()
-                longitudeArr.clear()
-                timeArr.clear()
-                speedArr.clear()
-                naturalSpeed = 0.0
-                binding.data.setText("")
-                binding.naturalSpeed.setText("")
-                binding.unit.setText("")
-
+                initializeData()
 
                 measurement = true
                 messageText = "測定準備中"
                 binding.message.setText(messageText)
                 locationStart()
-
 
             }
         }
@@ -115,9 +102,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
             Log.d("stop", "ボタンが押された")
             // 測定中の時
             if(measurement){
-                locationStop()
                 measurement = false
-
                 locationStop()
 
             // 測定外の時
@@ -186,7 +171,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
         stopData = df.format(timeArr.get(timeArr.size - 1))
 
         // 最頻値で自然に漕いでいる時の速度を求める
-
         naturalSpeed = calculation.calcMode(speedArr)
 
         // 最頻値がない場合（mode = 0）
@@ -199,19 +183,36 @@ class MainActivity : AppCompatActivity(), LocationListener {
         }
         Log.d("locationStop", "naturalSeed : " + naturalSpeed.toString())
 
-        /*
-        // なんか使えない
-        sb.append("自然に漕いでいた時の速度 ")
-        val start = sb.length
-        sb.append(dataList.naturalSpeed.toString())
-        val end = sb.length
-        sb.append("km/h")
-        sb.setSpan(RelativeSizeSpan(1.5f), start, end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-        binding.data.setText(sb)
-        */
+        // データベースに保存
+        database.setData(latitudeArr, longitudeArr, startData,
+            stopData,timeArr,speedArr, naturalSpeed)
+
+        // 今までの自然に漕いでいた時の速度を取得
+        nsList.clear()
+        var id = 1L
+        var judge = true
+        while(judge){
+            var data = database.getData(id)
+            var ns = data?.naturalSpeed
+            Log.d("locationStop", "id:" + id + "ns:" + ns)
+            if(ns == null){
+                judge = false
+            }else{
+                nsList.add(ns)
+                id++
+
+            }
+        }
+
+
+        // この速度以下になったら通知する
+        var alartSpeed = calculation.calcAlartSpeed(nsList, 1)
+        Log.d("locationStop", "alartSpeed:" + alartSpeed)
+
+
 
         if(naturalSpeed >= alartSpeed){
-            messageText = "タイヤの空気圧に問題なし！"
+            messageText = "タイヤの空気圧に\n問題なし！"
         }else{
             messageText = "タイヤに空気を\n入れたほうがいいよ！"
         }
@@ -223,9 +224,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
         binding.naturalSpeed.setText(naturalSpeed.toString())
 
         binding.unit.setText(unitText)
-
-        // データベースに保存
-        saveDataList()
 
     }
 
@@ -271,35 +269,29 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 binding.data.setText(dataText)
 
             }
-
             messageText = "速度を測定中"
             binding.message.setText(messageText)
 
         }
     }
 
-    // データベースに保存
-    private fun saveDataList(){
-        realm.executeTransaction{ db: Realm ->
-            val maxId = db.where<DataList>().max("id")
-            val nextId = (maxId?.toLong() ?: 0L) + 1L
-            val dataList = db.createObject<DataList>(nextId)
-            dataList.latitude = latitudeArr
-            dataList.longitude = longitudeArr
-            dataList.startDate = startData
-            dataList.stopDate = stopData
-            dataList.time = timeArr
-            dataList.speed = speedArr
-            dataList.naturalSpeed = naturalSpeed
+    // データの初期化
+    private fun initializeData(){
+        latitudeArr.clear()
+        longitudeArr.clear()
+        timeArr.clear()
+        speedArr.clear()
+        naturalSpeed = 0.0
+        binding.data.setText("")
+        binding.naturalSpeed.setText("")
+        binding.unit.setText("")
 
-        }
     }
-
-
 
     // アクティビティ終了処理
     override fun onDestroy() {
         super.onDestroy()
-        realm.close()
+        database.close()
+
     }
 }

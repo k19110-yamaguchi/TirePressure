@@ -19,7 +19,6 @@ import java.util.*
 class DataListAdapter(data: OrderedRealmCollection<DataList>, context: Context) :
     RealmRecyclerViewAdapter<DataList, DataListAdapter.ViewHolder>(data, true){
     // データベース用class
-    private val database = Database()
     private val dbActivity = DatabaseActivity()
     private val ct = context
 

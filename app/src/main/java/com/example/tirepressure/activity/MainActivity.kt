@@ -187,15 +187,39 @@ class MainActivity : AppCompatActivity(), LocationListener {
         database.setData(latitudeArr, longitudeArr, startData,
             stopData,timeArr,speedArr, naturalSpeed)
 
+        // 測定開始から一週間のデータを抽出
+        var judge = true
+        var id = 1L
+        var begin_date = ""
+        var end_id = 0L
+        while(judge){
+            var data = database.getData(id)
+            if(data != null){
+                // 測定を始めた日時
+                if(begin_date == ""){
+                    begin_date = data.startDate
+
+                }else{
+                    val l_begin_data = calculation.stringTodata(begin_date)
+                    var l_data = calculation.stringTodata(data.startDate)
+                    if(l_data <= l_begin_data + 7000000L){
+                        end_id = data.id
+
+                    }else{
+                        judge = false
+                    }
+                }
+            }
+        }
         // 今までの自然に漕いでいた時の速度を取得
         nsList.clear()
-        var id = 1L
-        var judge = true
+        id = 1L
+        judge = true
         while(judge){
             var data = database.getData(id)
             var ns = data?.naturalSpeed
             Log.d("locationStop", "id:" + id + "ns:" + ns)
-            if(ns == null){
+            if(id > end_id){
                 judge = false
             }else{
                 nsList.add(ns)

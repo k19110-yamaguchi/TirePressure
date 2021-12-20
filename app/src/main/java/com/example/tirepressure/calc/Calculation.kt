@@ -121,9 +121,12 @@ class Calculation {
         return als
     }
 
-    fun LongtoString(s_date: String): Long{
-        var l_date = 0L
-        return l_date
+    fun stringTodata(string_date: String): Long{
+        var sd = string_date.replace("/", "")
+            .replace(" ", "")
+            .replace(":", "")
+
+        return sd.toLong()
     }
 
 }

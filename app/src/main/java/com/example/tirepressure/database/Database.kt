@@ -35,6 +35,25 @@ class Database {
 
     }
 
+    // データベースを更新
+    fun updateData(lat: RealmList<Double>, lon: RealmList<Double>, startData: String,
+                   stopData: String, t: RealmList<Long>, s: RealmList<Double>, ns: Double, id: Long){
+
+        realm.executeTransaction{ db: Realm ->
+            val dataList = db.where<DataList>()
+                .equalTo("id", id).findFirst()
+            dataList?.latitude  = lat
+            dataList?.longitude = lon
+            dataList?.startDate = startData
+            dataList?.stopDate = stopData
+            dataList?.time = t
+            dataList?.speed = s
+            dataList?.naturalSpeed = ns
+
+        }
+
+    }
+
     // データベースから全てデータを取得
     fun getAllData(): RealmResults<DataList>? {
         // 全てのデータを取得
@@ -60,9 +79,21 @@ class Database {
 
             }
         }else{
-            val dl = getData(index)
-            realm.executeTransaction{
-                dl?.deleteFromRealm()
+            var id = index
+            while (true){
+                var dl = getData(id)
+                if(dl == null){
+                    realm.executeTransaction{
+                        dl = getData(id-1L)
+                        dl?.deleteFromRealm()
+
+                    }
+                    break
+
+                }
+                updateData(dl!!.latitude, dl!!.longitude, dl!!.startDate,
+                    dl!!.stopDate, dl!!.time, dl!!.speed, dl!!.naturalSpeed, id-1L)
+                id++
 
             }
         }

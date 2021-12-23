@@ -105,7 +105,7 @@ class Calculation {
     }
 
     // この速度以下になったら通知する速度を求める
-    fun calcAlartSpeed(ns: RealmList<Double>, n: Int): Double {
+    fun calcAlertSpeed(ns: RealmList<Double>, n: Int): Double {
         var test = false
         var als = 18.0
 

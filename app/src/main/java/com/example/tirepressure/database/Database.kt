@@ -1,11 +1,14 @@
 package com.example.tirepressure
 
 import android.util.Log
+import com.example.tirepressure.model.AlertSpeed
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmResults
 import io.realm.kotlin.createObject
 import io.realm.kotlin.where
+import java.time.LocalDate
+import java.util.*
 
 class Database {
     private lateinit var realm: Realm
@@ -17,9 +20,10 @@ class Database {
 
     }
 
-    // データベースにデータを保存
-    fun setData(lat: RealmList<Double>, lon: RealmList<Double>, startData: String,
-        stopData: String, t: RealmList<Long>, s: RealmList<Double>, ns: Double){
+
+    // DataListにデータを保存
+    fun setData(lat: RealmList<Double>, lon: RealmList<Double>, startData: Date,
+        stopData: Date, t: RealmList<Long>, s: RealmList<Double>, ns: Double){
         realm.executeTransaction{ db: Realm ->
             val maxId = db.where<DataList>().max("id")
             val nextId = (maxId?.toLong() ?: 0L) + 1L
@@ -36,26 +40,7 @@ class Database {
 
     }
 
-    // データベースを更新
-    fun updateData(lat: RealmList<Double>, lon: RealmList<Double>, startData: String,
-                   stopData: String, t: RealmList<Long>, s: RealmList<Double>, ns: Double, id: Long){
-
-        realm.executeTransaction{ db: Realm ->
-            val dataList = db.where<DataList>()
-                .equalTo("id", id).findFirst()
-            dataList?.latitude  = lat
-            dataList?.longitude = lon
-            dataList?.startDate = startData
-            dataList?.stopDate = stopData
-            dataList?.time = t
-            dataList?.speed = s
-            dataList?.naturalSpeed = ns
-
-        }
-
-    }
-
-    // データベースから全てデータを取得
+    // DataListから全てデータを取得
     fun getAllData(): RealmResults<DataList>? {
         // 全てのデータを取得
         var  dataList = realm.where<DataList>().findAll()
@@ -63,16 +48,17 @@ class Database {
 
     }
 
-    // データベースから特定のデータを取得
+    // DataListから特定のデータを取得
     fun getData(index: Long): DataList?{
         var data = realm.where<DataList>().equalTo("id", index).findFirst()
         return data
 
     }
 
-    // データベースから特定のデータを削除
+    // DataListから特定のデータを削除
     fun delData(index: Long){
 
+        // 全てのデータを削除
         if(index == -1L){
             val dl = getAllData()
             realm.executeTransaction{
@@ -80,34 +66,69 @@ class Database {
 
             }
         }else{
-            var id = index
-            while (true){
-                var dl = getData(id)
-                if(dl == null){
-                    realm.executeTransaction{
-                        dl = getData(id-1L)
-                        dl?.deleteFromRealm()
-
-                    }
-                    break
-
-                }
-                updateData(dl!!.latitude, dl!!.longitude, dl!!.startDate,
-                    dl!!.stopDate, dl!!.time, dl!!.speed, dl!!.naturalSpeed, id-1L)
-                id++
+            realm.executeTransaction{
+                var dl = getData(index)
+                dl?.deleteFromRealm()
 
             }
         }
     }
 
+    // DataListの保存数を取得
     fun getMaxId(): Long{
         var maxId = 0L
         realm.executeTransaction{db ->
             maxId = db.where<DataList>().max("id")!!.toLong()
 
         }
-
         return maxId
+
+    }
+
+    // AlertSpeed関係
+    // 通知速度を保存
+    fun saveAS(als : Double){
+
+        realm.executeTransaction{ db: Realm ->
+            val dataList = db.createObject<AlertSpeed>(1)
+            dataList.als = als
+
+        }
+    }
+
+    // 通知速度を取得
+    fun getAS(): Double{
+        var data = realm.where<AlertSpeed>().equalTo("id", 1L).findFirst()
+        return data!!.als
+
+    }
+
+    // 通知速度を削除
+    fun delAS(){
+        var  als = realm.where<DataList>().findAll()
+        realm.executeTransaction{
+            als?.deleteAllFromRealm()
+
+        }
+    }
+
+    // 空気を入れた日を保存
+    fun saveDateInf(dateInf: Date){
+        realm.executeTransaction{ db: Realm ->
+            val dataList = db.createObject<AlertSpeed>(1)
+            dataList.dateInf = dateInf
+
+        }
+    }
+
+    // 空気を入れた日を取得
+    fun getDateInf(): Date? {
+        var data = realm.where<AlertSpeed>().equalTo("id", 1L).findFirst()
+        if(data != null) {
+            return data.dateInf
+        }else{
+           return null
+        }
 
     }
 

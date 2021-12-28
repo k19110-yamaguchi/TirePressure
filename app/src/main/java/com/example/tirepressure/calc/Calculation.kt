@@ -105,7 +105,7 @@ class Calculation {
     }
 
     // この速度以下になったら通知する速度を求める
-    fun calcAlartSpeed(ns: RealmList<Double>, n: Int): Double {
+    fun calcAlertSpeed(ns: RealmList<Double>, n: Int): Double {
         var test = false
         var als = 18.0
 
@@ -121,9 +121,12 @@ class Calculation {
         return als
     }
 
-    fun LongtoString(s_date: String): Long{
-        var l_date = 0L
-        return l_date
+    fun stringTodata(string_date: String): Long{
+        var sd = string_date.replace("/", "")
+            .replace(" ", "")
+            .replace(":", "")
+
+        return sd.toLong()
     }
 
 }

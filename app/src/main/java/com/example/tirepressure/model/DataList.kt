@@ -3,15 +3,16 @@ package com.example.tirepressure
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
+import java.util.*
 
 // モデルを準備
 open class DataList : RealmObject(){
     @PrimaryKey
     var id: Long = 0
     // 測定開始日時
-    var startDate: String = ""
+    var startDate: Date = Date()
     // 測定終了日時
-    var stopDate: String = ""
+    var stopDate: Date = Date()
     // 緯度のリスト
     var latitude: RealmList<Double> = RealmList()
     // 経度のリスト

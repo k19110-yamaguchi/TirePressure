@@ -19,9 +19,10 @@ import java.util.*
 class DataListAdapter(data: OrderedRealmCollection<DataList>, context: Context) :
     RealmRecyclerViewAdapter<DataList, DataListAdapter.ViewHolder>(data, true){
     // データベース用class
-    private val database = Database()
     private val dbActivity = DatabaseActivity()
     private val ct = context
+    // 日時のフォーマット
+    val df = SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
 
         init {
             setHasStableIds(true)
@@ -48,7 +49,7 @@ class DataListAdapter(data: OrderedRealmCollection<DataList>, context: Context) 
         val dataList: DataList? = getItem(position)
 
         holder.id.text = "id: " + dataList?.id
-        holder.priod.text = dataList?.startDate + " 〜 " + dataList?.stopDate
+        holder.priod.text = df.format(dataList?.startDate) + " 〜 " + df.format(dataList?.stopDate)
         holder.naturalSpeed.text = dataList?.naturalSpeed.toString() + "km/h"
         var text_lat = "緯度（°）\n"
         var text_lon = "経度（°）\n"

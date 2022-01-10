@@ -77,27 +77,47 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
         setContentView(view)
 
+        // 空気を入れた日付を表示
+        dateInflated = database.getDateInf()
+        if(dateInflated != null){
+            var s_dateInflated = sdf.format(dateInflated)
+            binding.dateOfInflated.setText("最後に空気を入れた日：" + s_dateInflated)
+            setStatus(binding, dateInflated!!)
+        }else{
+            binding.dateOfInflated.setText("空気を入れてボタンを押してください")
+
+        }
+
         // 開始ボタンが押された時
         binding.start.setOnClickListener {
             Log.d("start", "ボタンが押された")
-            // 測定中の時
-            if(measurement){
-                //Toastの設定
-                toastText = "測定中は無効です"
+            // タイヤに空気を入れた日常を記録していない場合
+            if(dateInflated == null){
+                toastText = "空気を入れてボタンを押してください"
                 var ts = Toast.makeText(applicationContext, toastText, Toast.LENGTH_SHORT)
                 ts.setGravity(Gravity.CENTER, 0, 800)
                 ts.show()
 
-            // 測定外の時
             }else{
-                // 初期化
-                initializeData()
+                // 測定中の時
+                if(measurement){
+                    //Toastの設定
+                    toastText = "測定中は無効です"
+                    var ts = Toast.makeText(applicationContext, toastText, Toast.LENGTH_SHORT)
+                    ts.setGravity(Gravity.CENTER, 0, 800)
+                    ts.show()
 
-                measurement = true
-                messageText = "測定準備中"
-                binding.message.setText(messageText)
-                locationStart()
+                // 測定外の時
+                }else{
+                    // 初期化
+                    initializeData()
 
+                    measurement = true
+                    messageText = "測定準備中"
+                    binding.message.setText(messageText)
+                    locationStart()
+
+                }
             }
         }
 
@@ -134,14 +154,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 startActivity(intent)
 
             }
-        }
-
-        // 空気を入れた日付を表示
-        dateInflated = database.getDateInf()
-        if(dateInflated != null){
-            var s_dateInflated = sdf.format(dateInflated)
-            binding.dateOfInflated.setText("最後に空気を入れた日：" + s_dateInflated)
-            setStatus(binding, dateInflated!!)
         }
 
         // 空気を入れたボタンを押した時

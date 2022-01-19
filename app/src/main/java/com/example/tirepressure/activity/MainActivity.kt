@@ -20,27 +20,39 @@ import io.realm.RealmList
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.util.*
+import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity(), LocationListener {
     // ActivityMainに対応するviewBindingを生成
     private lateinit var binding: ActivityMainBinding
-    //　locationManager
+    //　locationManagerを生成
     private lateinit var locationManager: LocationManager
 
-    // 測定中かどうか
+    // 現在測定中かどうか
     private var measurement = false
+    // 現在通知速度を求めているか
+    private var calcAS = true
+
     // Toastで表示するtext
     private var toastText = ""
-    // messageに表示するtext
-    private var messageText = ""
-    // dataに表示するtext
+    // t_resultに表示するtext
+    private var resultText = ""
+    // t_dataに表示するtext
     private var dataText = ""
-    // unitに表示するtext
+    // t_naturalSpeedに表示するtext
+    private var naturalSpeedText = ""
+    // t_unitに表示するtext
     private val unitText = "km/h"
+    // t_statusに表示するtext
+    private var statusText = ""
+    // t_dateOfInflatedに表示するtext
+    private var dateOfInflatedText = "空気を入れてボタンを押してください"
+
     // 日時のフォーマット
-    val df = SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
+    private val fullSdf = SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
     // 日時のフォーマット
-    val sdf = SimpleDateFormat("yyyy/MM/dd")
+    private val aboutSdf = SimpleDateFormat("yyyy/MM/dd")
+
     // 開始日時
     var startData = Date()
     // 終了日時
@@ -57,14 +69,21 @@ class MainActivity : AppCompatActivity(), LocationListener {
     var nsList :RealmList<Double> = RealmList()
     // 自然に漕いでいるときの速度
     var naturalSpeed: Double = 0.0
+    // 通知速度
+    var alertSpeed: Double = 0.0
+    // 空気を入れた日時
+    var dateInf : Date? = null
+    // 空気を入れたからどのくらい測定するのか
+    val amount = 7
+    // 空気を入れた日からある程度経過した時の日付
+    var dateInfAfter : Date? = null
 
     // 計算用class
     private val calculation = Calculation()
     // データベース用class
     private val database = Database()
 
-    // 空気を入れた日時
-    var dateInflated : Date? = null
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,22 +96,28 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
         setContentView(view)
 
-        // 空気を入れた日付を表示
-        dateInflated = database.getDateInf()
-        if(dateInflated != null){
-            var s_dateInflated = sdf.format(dateInflated)
-            binding.dateOfInflated.setText("最後に空気を入れた日：" + s_dateInflated)
-            setStatus(binding, dateInflated!!)
+        // 空気を入れた日付を取得
+        dateInf = database.getDateInf()
+        // もし空気を入れた日の記録があった場合
+        if(dateInf != null){
+            alertSpeed = database.getAS()
+            // 測定を終了する日を取得
+            dateInfAfter = database.getDateInfAfter()
+            // t_dateOfInflatedに表示するテキストを代入
+            dateOfInflatedText = "最後に空気を入れた日：" + aboutSdf.format(dateInf)
+            binding.tDateOfInflated.setText(dateOfInflatedText)
+            // 状態を表示
+            setStatus(binding)
         }else{
-            binding.dateOfInflated.setText("空気を入れてボタンを押してください")
+            binding.tDateOfInflated.setText("空気を入れてボタンを押してください")
 
         }
 
         // 開始ボタンが押された時
-        binding.start.setOnClickListener {
+        binding.bStart.setOnClickListener {
             Log.d("start", "ボタンが押された")
             // タイヤに空気を入れた日常を記録していない場合
-            if(dateInflated == null){
+            if(dateInf == null){
                 toastText = "空気を入れてボタンを押してください"
                 var ts = Toast.makeText(applicationContext, toastText, Toast.LENGTH_SHORT)
                 ts.setGravity(Gravity.CENTER, 0, 800)
@@ -109,12 +134,13 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
                 // 測定外の時
                 }else{
+                    measurement = true
                     // 初期化
                     initializeData()
 
-                    measurement = true
-                    messageText = "測定準備中"
-                    binding.message.setText(messageText)
+                    resultText = "測定準備中"
+                    binding.tResult.setText(resultText)
+
                     locationStart()
 
                 }
@@ -122,12 +148,24 @@ class MainActivity : AppCompatActivity(), LocationListener {
         }
 
         // 終了ボタンが押された時
-        binding.stop.setOnClickListener {
+        binding.bStop.setOnClickListener {
             Log.d("stop", "ボタンが押された")
             // 測定中の時
             if(measurement){
-                measurement = false
-                locationStop()
+                // 終了ボタンを押すのが早い場合
+                if(speedArr.size < 2){
+                    // Toastの設定
+                    toastText = "測定データが不足しています\n" +
+                            "少しお待ちください"
+                    var ts = Toast.makeText(applicationContext, toastText, Toast.LENGTH_SHORT)
+                    ts.setGravity(Gravity.CENTER, 0, 800)
+                    ts.show()
+
+                }else{
+                    measurement = false
+                    locationStop()
+
+                }
 
             // 測定外の時
             }else{
@@ -141,7 +179,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
         }
 
         // データベースボタンが押された時
-        binding.goDatabase.setOnClickListener {
+        binding.bGoDatabase.setOnClickListener {
             if(measurement){
                 //Toastの設定
                 toastText = "測定中は無効です"
@@ -157,63 +195,68 @@ class MainActivity : AppCompatActivity(), LocationListener {
         }
 
         // 空気を入れたボタンを押した時
-        binding.inflated.setOnClickListener {
-            var dateInflated = Date()
-            var s_dateInflated = sdf.format(dateInflated)
-            binding.dateOfInflated.setText("最後に空気を入れた日：" + s_dateInflated)
-            database.saveDateInf(dateInflated)
-            setStatus(binding, dateInflated)
+        binding.bInflated.setOnClickListener {
+            if(dateInf != null){
+                // データベースを削除
+                database.delALS()
+            }
+            // 空気を入れた時の日付を取得
+            dateInf = Date()
+            // 空気を入れたから１週間後の日時
+            dateInfAfter = calculation.calcDaysLater(dateInf!!, amount)
+
+            dateOfInflatedText = "最後に空気を入れた日："
+            dateOfInflatedText += aboutSdf.format(dateInf)
+            binding.tDateOfInflated.setText(dateOfInflatedText)
+
+
+            // データベースに空気を入れた日付を保存
+            database.saveDateInf(dateInf!!, dateInfAfter!!)
+            // データベースに保存されている
+            setStatus(binding)
 
         }
     }
 
 
-    private fun setStatus(binding: ActivityMainBinding, dateInf: Date){
-        val cal: Calendar = Calendar.getInstance()
-        cal.time = dateInf
-        cal.add(Calendar.DATE, 7)
-        var dateInfAfWeek = cal.time
-        var dateNow = Date()
-        var msg = ""
+    // t_statusに表示するテキストを取得
+    private fun setStatus(binding: ActivityMainBinding){
+        // 現在の日付
+        val dateNow = Date()
+        statusText = "状態："
 
         // 空気を入れてから1週間経っていない時
-        if(dateNow.before(dateInfAfWeek)){
-            var s_dateInf = sdf.format(dateInf)
-            var s_dateInfAfWeek = sdf.format(dateInfAfWeek)
-            msg = s_dateInf + "〜" + s_dateInfAfWeek + "まで通知速度測定中"
+        if(dateNow.before(dateInfAfter)){
+            calcAS = true
+            var s_dateInf = aboutSdf.format(dateInf)
+            var s_dateInfAfWeek = aboutSdf.format(dateInfAfter)
+            statusText += s_dateInf + "〜" + s_dateInfAfWeek + "まで通知速度測定中"
 
-            // 空気を入れてから1週間経っている時
+        // 空気を入れてから1週間経っている時
         }else{
-            msg = "通知速度と自然速度を比較中"
+            calcAS = false
+            statusText += "通知速度（" + alertSpeed.toString() + "km/h）と自然速度を比較中"
 
         }
-        binding.mStatus.setText("状態：" + msg)
+        binding.tStatus.setText(statusText)
 
     }
-
-    //
-    private fun compDate(d1: Date, d2: Date): Int{
-        var n: Int = d1.compareTo(d2)
-        return n
-
-    }
-
-
 
     // コピペ
     private fun locationStart() {
 
+        // Instances of LocationManager class must be obtained using Context.getSystemService(Class)
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Log.d("locationStart", "location manager Enabled")
+            Log.d("debug", "location manager Enabled")
         } else {
             // to prompt setting up GPS
             val settingsIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(settingsIntent)
-            Log.d("locationStart", "not gpsEnable, startActivity")
+            Log.d("debug", "not gpsEnable, startActivity")
         }
 
         if (ContextCompat.checkSelfPermission(this,
@@ -221,7 +264,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
             ActivityCompat.requestPermissions(this,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1000)
 
-            Log.d("lcationStart", "checkSelfPermission false")
+            Log.d("debug", "checkSelfPermission false")
             return
         }
 
@@ -230,7 +273,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
             1000,
             0f,
             this)
-
     }
     // ここまで
 
@@ -238,6 +280,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
         Log.d("locationStop", "測定終了")
         stopData = Date()
 
+        // thread{計算する関数}
         // 最頻値で自然に漕いでいる時の速度を求める
         naturalSpeed = calculation.calcMode(speedArr)
 
@@ -255,41 +298,32 @@ class MainActivity : AppCompatActivity(), LocationListener {
         database.setData(latitudeArr, longitudeArr, startData,
             stopData,timeArr,speedArr, naturalSpeed)
 
-        var sta_id = 0L
-        var end_id = 0L
-        val max_id = database.getMaxId()
-        var begin_date = database.getDateInf()
-        var measurementPeriod = true
-        val cal: Calendar = Calendar.getInstance()
-        cal.time = begin_date
-        cal.add(Calendar.DATE, 7)
-        var dateInfAfWeek = cal.time
-        for(id in 1L..max_id){
-            var data = database.getData(id)
-            if(data != null){
-                if(data.startDate.before(begin_date) && data.startDate.after(dateInfAfWeek)){
-                    if(sta_id == 0L){
-                        sta_id = data.id
-                        end_id = data.id
-                        measurementPeriod = true
+        //
+        if(calcAS){
+            resultText = "現在計測期間中"
 
-                    }else{
-                        end_id = data.id
-                    }
-                }
-            }
-        }
-
-        // 測定開始から1週間以内
-        if(measurementPeriod){
-            messageText = "現在計測期間中"
-
-        // 測定開始から１週間後
         }else{
-            var alertSpeed = database.getAS()
+            alertSpeed = database.getAS()
             if(alertSpeed == null){
                 // 今までの自然に漕いでいた時の速度を取得
                 nsList.clear()
+                var sta_id = 0L
+                var end_id = 0L
+                val max_id = database.getMaxId()
+                for(id in 1L..max_id){
+                    var data = database.getData(id)
+                    if(data != null){
+                        if(data.startDate.before(dateInf) && data.startDate.after(dateInfAfter)){
+                            if(sta_id == 0L){
+                                sta_id = data.id
+                                end_id = data.id
+
+                            }else{
+                                end_id = data.id
+                            }
+                        }
+                    }
+                }
                 for(id in 1L .. end_id){
                     var data = database.getData(id)
                     var ns = data?.naturalSpeed
@@ -306,20 +340,20 @@ class MainActivity : AppCompatActivity(), LocationListener {
             }
 
             if(naturalSpeed >= alertSpeed){
-                messageText = "タイヤの空気圧に\n問題なし！"
+                resultText = "タイヤの空気圧に\n問題なし！"
             }else{
-                messageText = "タイヤに空気を\n入れたほうがいいよ！"
+                resultText = "タイヤに空気を\n入れたほうがいいよ！"
             }
         }
 
-        binding.message.setText(messageText)
+        binding.tResult.setText(resultText)
 
         dataText = "自然に漕いでいた時の速度"
-        binding.data.setText(dataText)
+        binding.tData.setText(dataText)
 
-        binding.naturalSpeed.setText(naturalSpeed.toString())
+        binding.tNaturalSpeed.setText(naturalSpeed.toString())
 
-        binding.unit.setText(unitText)
+        binding.tUnit.setText(unitText)
 
     }
 
@@ -354,7 +388,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
                         "経度：" + longitudeArr.get(longitudeArr.size-1) + "°\n" +
                         "速度：" + speedArr.get(speedArr.size-1) + "km/h"
 
-                binding.data.setText(dataText)
+                binding.tData.setText(dataText)
 
             }else{
 
@@ -362,11 +396,11 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 dataText = "緯度：" + latitudeArr.get(latitudeArr.size-1) + "°\n" +
                         "経度：" + longitudeArr.get(longitudeArr.size-1) + "°\n"
 
-                binding.data.setText(dataText)
+                binding.tData.setText(dataText)
 
             }
-            messageText = "速度を測定中"
-            binding.message.setText(messageText)
+            resultText = "速度を測定中"
+            binding.tResult.setText(resultText)
 
         }
     }
@@ -378,9 +412,9 @@ class MainActivity : AppCompatActivity(), LocationListener {
         timeArr.clear()
         speedArr.clear()
         naturalSpeed = 0.0
-        binding.data.setText("")
-        binding.naturalSpeed.setText("")
-        binding.unit.setText("")
+        binding.tData.setText("")
+        binding.tNaturalSpeed.setText("")
+        binding.tUnit.setText("")
 
     }
 

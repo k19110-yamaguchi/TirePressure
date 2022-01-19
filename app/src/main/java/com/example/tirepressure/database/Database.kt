@@ -13,6 +13,7 @@ import java.util.*
 class Database {
     private lateinit var realm: Realm
 
+
     // データベースを作成
     fun create(){
         // Realmのインスタンスを取得
@@ -90,7 +91,7 @@ class Database {
     fun saveAS(als : Double){
 
         realm.executeTransaction{ db: Realm ->
-            val dataList = db.createObject<AlertSpeed>(1)
+            val dataList = db.createObject<AlertSpeed>(1L)
             dataList.als = als
 
         }
@@ -103,20 +104,21 @@ class Database {
 
     }
 
-    // 通知速度を削除
-    fun delAS(){
-        var  als = realm.where<DataList>().findAll()
+    // 通知速度関係のデータベースを削除
+    fun delALS(){
+        var  als = realm.where<AlertSpeed>().findAll()
         realm.executeTransaction{
             als?.deleteAllFromRealm()
 
         }
     }
 
-    // 空気を入れた日を保存
-    fun saveDateInf(dateInf: Date){
+    // 空気を入れた日と測定終了日を保存
+    fun saveDateInf(dateInf: Date, dateInfAfter: Date){
         realm.executeTransaction{ db: Realm ->
-            val dataList = db.createObject<AlertSpeed>(1)
+            val dataList = db.createObject<AlertSpeed>(1L)
             dataList.dateInf = dateInf
+            dataList.dateInfAfter = dateInfAfter
 
         }
     }
@@ -128,6 +130,16 @@ class Database {
             return data.dateInf
         }else{
            return null
+        }
+
+    }
+    // 測定終了日を取得
+    fun getDateInfAfter(): Date? {
+        var data = realm.where<AlertSpeed>().equalTo("id", 1L).findFirst()
+        if(data != null) {
+            return data.dateInfAfter
+        }else{
+            return null
         }
 
     }

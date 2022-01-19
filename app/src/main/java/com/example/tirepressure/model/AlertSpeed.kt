@@ -10,5 +10,6 @@ open class AlertSpeed : RealmObject(){
     var id: Long = 0
     var als: Double = 0.0
     var dateInf : Date = Date()
+    var dateInfAfter : Date = Date()
 
 }

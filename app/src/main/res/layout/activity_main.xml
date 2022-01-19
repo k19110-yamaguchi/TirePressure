@@ -8,7 +8,7 @@
     tools:context=".MainActivity">
 
     <Button
-        android:id="@+id/start"
+        android:id="@+id/b_start"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="64dp"
@@ -20,7 +20,7 @@
         app:layout_constraintStart_toStartOf="parent" />
 
     <Button
-        android:id="@+id/stop"
+        android:id="@+id/b_stop"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="64dp"
@@ -28,55 +28,54 @@
         android:scaleY="@dimen/buttonScale"
         android:text="@string/stop"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/start" />
+        app:layout_constraintTop_toTopOf="@+id/b_start" />
 
     <TextView
-        android:id="@+id/message"
+        android:id="@+id/t_result"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="128dp"
-        android:text="ここに測定結果を\n表示するよ！"
         android:textAlignment="center"
         android:textAppearance="@style/TextAppearance.AppCompat.Large"
         android:textSize="34sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/start"
+        app:layout_constraintBottom_toTopOf="@+id/b_start"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
-        android:id="@+id/data"
+        android:id="@+id/t_data"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="自転車の速度を測定して\nタイヤの空気を入れる時期を通知するよ！\n平坦な直線の道で測定してね！"
         android:textSize="20sp"
-        app:layout_constraintBottom_toTopOf="@+id/message"
+        app:layout_constraintBottom_toTopOf="@+id/t_result"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/naturalSpeed"
+        android:id="@+id/t_naturalSpeed"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:textSize="56sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/data" />
+        app:layout_constraintTop_toBottomOf="@+id/t_data" />
 
     <TextView
-        android:id="@+id/unit"
+        android:id="@+id/t_unit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginBottom="8dp"
         android:textSize="20sp"
-        app:layout_constraintBottom_toBottomOf="@+id/naturalSpeed"
-        app:layout_constraintStart_toEndOf="@+id/naturalSpeed" />
+        app:layout_constraintBottom_toBottomOf="@+id/t_naturalSpeed"
+        app:layout_constraintStart_toEndOf="@+id/t_naturalSpeed" />
 
     <Button
-        android:id="@+id/go_database"
+        android:id="@+id/b_goDatabase"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
@@ -86,36 +85,36 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/m_status"
+        android:id="@+id/t_status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="57dp"
         android:layout_marginBottom="32dp"
         android:text="状態："
         android:textSize="16sp"
-        app:layout_constraintBottom_toTopOf="@+id/data"
+        app:layout_constraintBottom_toTopOf="@+id/t_data"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/go_database" />
+        app:layout_constraintTop_toBottomOf="@+id/b_goDatabase" />
 
     <Button
-        android:id="@+id/inflated"
+        android:id="@+id/b_inflated"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
         android:layout_marginBottom="24dp"
         android:text="空気を入れた"
-        app:layout_constraintBottom_toTopOf="@+id/stop"
+        app:layout_constraintBottom_toTopOf="@+id/b_stop"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
-        android:id="@+id/dateOfInflated"
+        android:id="@+id/t_dateOfInflated"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="16dp"
         android:textSize="14sp"
-        app:layout_constraintBottom_toBottomOf="@+id/inflated"
-        app:layout_constraintEnd_toStartOf="@+id/inflated"
-        app:layout_constraintTop_toTopOf="@+id/inflated" />
+        app:layout_constraintBottom_toBottomOf="@+id/b_inflated"
+        app:layout_constraintEnd_toStartOf="@+id/b_inflated"
+        app:layout_constraintTop_toTopOf="@+id/b_inflated" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

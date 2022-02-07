@@ -1,8 +1,7 @@
 package com.example.tirepressure
 
-import android.util.Log
 import io.realm.RealmList
-import kotlin.collections.ArrayList
+import java.util.*
 
 class Calculation {
     private val latDistance = 91.2877855
@@ -37,8 +36,11 @@ class Calculation {
     }
 
     // 最頻値を計算
-    fun calcMode(s: RealmList<Double>): Double{
-
+    fun calcMode(speed: RealmList<Double>): Double{
+        var s : RealmList<Double> = RealmList()
+        for(tmp in speed){
+            s.add(tmp)
+        }
         // 速度を昇順でsort
         s.sort()
 
@@ -72,12 +74,28 @@ class Calculation {
     }
 
     // 中央値を求める
-    fun calcMedian(s: RealmList<Double>): Double{
+    fun calcMedian(speed: RealmList<Double>): Double{
+        var s : RealmList<Double> = RealmList()
+        for(tmp in speed){
+            s.add(tmp)
+        }
+
         s.sort()
-        val index: Int = s.size/2
+        var count = 0
+        for(i in 0..s.size-1){
+            if(s.get(i)!! >= truncateSpeed){
+                count = i
+                break;
+
+            }
+        }
+
+        val index: Int = (s.size - count)/2 + count
+
         val median = s.get(index)
 
         return median!!
+
     }
 
     // 平均を求める
@@ -115,19 +133,35 @@ class Calculation {
             als = ave - (n * sd)
             als = Math.round(als * 10.0).toDouble() / 10
             var msg = n.toString() + "σ: " + (n * sd)
-            Log.d("calcAlartSpeed", msg)
         }
 
         return als
     }
 
-    fun stringTodata(string_date: String): Long{
-        var sd = string_date.replace("/", "")
-            .replace(" ", "")
-            .replace(":", "")
+    // ある日付から数日後の日付を求める
+    fun calcDaysLater(d: Date, amount: Int): Date{
+        val cal: Calendar = Calendar.getInstance()
+        cal.time = d
+        // 指定された日時経過した日付を求める
+        cal.add(Calendar.DATE, amount)
+        val daysLater = cal.time
+        return daysLater
 
-        return sd.toLong()
     }
 
+
+    // 通知速度を求めるか比較するかを求める
+    fun checkCompNS(d: Date): Boolean{
+        val cal: Calendar = Calendar.getInstance()
+        cal.time = d
+        // 空気を入れたから一週間後の日付を求める
+        cal.add(Calendar.DATE, 7)
+        var dateInfAfter = cal.time
+        // 現在の日付
+        var dateNow = Date()
+        // 空気を入れてから1週間経った時（true）
+        return dateNow.after(dateInfAfter)
+
+    }
 }
 

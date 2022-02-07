@@ -60,12 +60,12 @@ class DataListAdapter(data: OrderedRealmCollection<DataList>, context: Context) 
             if(i == 0){
                 text_lat += dataList?.latitude?.get(i).toString() + "\n"
                 text_lon += dataList?.longitude?.get(i).toString() + "\n"
-                text_s += "\n"
+                text_s += "\n" + dataList?.time?.get(i).toString() + "\n"
 
             }else{
                 text_lat += dataList?.latitude?.get(i).toString() + "\n"
                 text_lon += dataList?.longitude?.get(i).toString() + "\n"
-                text_s += dataList?.speed?.get(i-1).toString() +"\n"
+                text_s += dataList?.speed?.get(i-1).toString() + "\n" + dataList?.time?.get(i).toString() + "\n"
 
             }
         }

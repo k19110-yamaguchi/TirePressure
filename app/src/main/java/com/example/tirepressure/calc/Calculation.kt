@@ -1,9 +1,7 @@
 package com.example.tirepressure
 
-import android.util.Log
 import io.realm.RealmList
 import java.util.*
-import kotlin.collections.ArrayList
 
 class Calculation {
     private val latDistance = 91.2877855
@@ -38,8 +36,11 @@ class Calculation {
     }
 
     // 最頻値を計算
-    fun calcMode(s: RealmList<Double>): Double{
-
+    fun calcMode(speed: RealmList<Double>): Double{
+        var s : RealmList<Double> = RealmList()
+        for(tmp in speed){
+            s.add(tmp)
+        }
         // 速度を昇順でsort
         s.sort()
 
@@ -73,7 +74,12 @@ class Calculation {
     }
 
     // 中央値を求める
-    fun calcMedian(s: RealmList<Double>): Double{
+    fun calcMedian(speed: RealmList<Double>): Double{
+        var s : RealmList<Double> = RealmList()
+        for(tmp in speed){
+            s.add(tmp)
+        }
+
         s.sort()
         var count = 0
         for(i in 0..s.size-1){
@@ -89,6 +95,7 @@ class Calculation {
         val median = s.get(index)
 
         return median!!
+
     }
 
     // 平均を求める
@@ -126,7 +133,6 @@ class Calculation {
             als = ave - (n * sd)
             als = Math.round(als * 10.0).toDouble() / 10
             var msg = n.toString() + "σ: " + (n * sd)
-            Log.d("calcAlartSpeed", msg)
         }
 
         return als

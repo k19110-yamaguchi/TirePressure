@@ -73,8 +73,8 @@ class MainActivity : AppCompatActivity(), LocationListener {
     var alertSpeed: Double = 0.0
     // 空気を入れた日時
     var dateInf : Date? = null
-    // 空気を入れたからどのくらい測定するのか
-    val amount = 7
+    // 空気を入れたから何日後に判定するのか
+    val amount = 1
     // 空気を入れた日からある程度経過した時の日付
     var dateInfAfter : Date? = null
 
@@ -83,6 +83,9 @@ class MainActivity : AppCompatActivity(), LocationListener {
     // データベース用class
     private val database = Database()
 
+    fun print(tag: String, mes: String){
+        Log.d(tag, mes)
+    }
 
 
 
@@ -115,7 +118,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
         // 開始ボタンが押された時
         binding.bStart.setOnClickListener {
-            Log.d("start", "ボタンが押された")
             // タイヤに空気を入れた日常を記録していない場合
             if(dateInf == null){
                 toastText = "空気を入れてボタンを押してください"
@@ -138,9 +140,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
                     // 初期化
                     initializeData()
 
-                    resultText = "測定準備中"
-                    binding.tResult.setText(resultText)
-
                     locationStart()
 
                 }
@@ -149,7 +148,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
         // 終了ボタンが押された時
         binding.bStop.setOnClickListener {
-            Log.d("stop", "ボタンが押された")
             // 測定中の時
             if(measurement){
                 // 終了ボタンを押すのが早い場合
@@ -251,20 +249,19 @@ class MainActivity : AppCompatActivity(), LocationListener {
         val locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
 
         if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-            Log.d("debug", "location manager Enabled")
         } else {
             // to prompt setting up GPS
             val settingsIntent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(settingsIntent)
-            Log.d("debug", "not gpsEnable, startActivity")
         }
 
+        // 許可がなかった場合
         if (ContextCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this,
                 arrayOf(Manifest.permission.ACCESS_FINE_LOCATION), 1000)
 
-            Log.d("debug", "checkSelfPermission false")
+            measurement = false
             return
         }
 
@@ -277,22 +274,25 @@ class MainActivity : AppCompatActivity(), LocationListener {
     // ここまで
 
     private fun locationStop(){
-        Log.d("locationStop", "測定終了")
         stopData = Date()
 
         // thread{計算する関数}
         // 最頻値で自然に漕いでいる時の速度を求める
+        for(s in speedArr){
+            print("自然速度計算前", s.toString())
+        }
         naturalSpeed = calculation.calcMode(speedArr)
 
         // 最頻値がない場合（mode = 0）
         if(naturalSpeed == 0.0){
             // 中央値で自然に漕いでいる時の速度を求める
             naturalSpeed = calculation.calcMedian(speedArr)
-            Log.d("locationStop", "中央値で計算")
         }else{
-            Log.d("locationStop", "最頻値で計算")
         }
-        Log.d("locationStop", "naturalSeed : " + naturalSpeed.toString())
+
+        for(s in speedArr){
+            print("自然速度計算後", s.toString())
+        }
 
         // データベースに保存
         database.setData(latitudeArr, longitudeArr, startData,
@@ -327,14 +327,13 @@ class MainActivity : AppCompatActivity(), LocationListener {
                 for(id in 1L .. end_id){
                     var data = database.getData(id)
                     var ns = data?.naturalSpeed
-                    Log.d("locationStop", "id:" + id + "ns:" + ns)
                     if(ns != null){
                         nsList.add(ns)
                     }
                 }
                 // この速度以下になったら通知する
                 alertSpeed = calculation.calcAlertSpeed(nsList, 1)
-                Log.d("locationStop", "alertSpeed:" + alertSpeed)
+                print("alertSpeed", alertSpeed.toString())
                 database.saveAS(alertSpeed)
 
             }
@@ -364,9 +363,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
             latitudeArr.add(location.latitude)
             longitudeArr.add(location.longitude)
             timeArr.add(location.time)
-            Log.d("onLocationChanged", "latitude : " + latitudeArr.get(latitudeArr.size-1).toString())
-            Log.d("onLocationChanged", "longitude : " + longitudeArr.get(longitudeArr.size-1).toString())
-            Log.d("onLocationChanged", "time : " + timeArr.get(timeArr.size-1).toString())
 
             // 計測データが2つ以上ある時
             if(latitudeArr.size >= 2){
@@ -381,8 +377,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
                 // 速度を保存
                 speedArr.add(speed)
-
-                Log.d("onLocationChanged", "speed : " + speedArr.get(speedArr.size-1).toString())
+                print("speed", speed.toString())
 
                 dataText = "緯度：" + latitudeArr.get(latitudeArr.size-1) + "°\n" +
                         "経度：" + longitudeArr.get(longitudeArr.size-1) + "°\n" +

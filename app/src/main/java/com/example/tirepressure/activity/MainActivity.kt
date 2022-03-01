@@ -18,9 +18,7 @@ import androidx.core.content.ContextCompat
 import com.example.tirepressure.databinding.ActivityMainBinding
 import io.realm.RealmList
 import java.text.SimpleDateFormat
-import java.time.LocalDate
 import java.util.*
-import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity(), LocationListener {
     // ActivityMainに対応するviewBindingを生成
@@ -49,8 +47,6 @@ class MainActivity : AppCompatActivity(), LocationListener {
     private var dateOfInflatedText = "空気を入れてボタンを押してください"
 
     // 日時のフォーマット
-    private val fullSdf = SimpleDateFormat("yyyy/MM/dd HH:mm:ss")
-    // 日時のフォーマット
     private val aboutSdf = SimpleDateFormat("yyyy/MM/dd")
 
     // 開始日時
@@ -74,7 +70,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
     // 空気を入れた日時
     var dateInf : Date? = null
     // 空気を入れたから何日後に判定するのか
-    val amount = 1
+    val amount = 7
     // 空気を入れた日からある程度経過した時の日付
     var dateInfAfter : Date? = null
 
@@ -83,6 +79,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
     // データベース用class
     private val database = Database()
 
+    // デバック用
     fun print(tag: String, mes: String){
         Log.d(tag, mes)
     }
@@ -103,7 +100,55 @@ class MainActivity : AppCompatActivity(), LocationListener {
         dateInf = database.getDateInf()
         // もし空気を入れた日の記録があった場合
         if(dateInf != null){
-            alertSpeed = database.getAS()
+            print("hoge", "hoge")
+            alertSpeed = database.getALS()
+            alertSpeed = 18.2
+            if(alertSpeed == null || alertSpeed == 0.0){
+                // 今までの自然に漕いでいた時の速度を取得
+                nsList.clear()
+                var sta_id = 0L
+                var end_id = 0L
+                val max_id = database.getMaxId()
+                print("max_id", max_id.toString())
+                for(id in 1L..max_id){
+                    var data = database.getData(id)
+                    if (data != null) {
+                        print("dataId", data.id.toString())
+                        print("startDate", data.startDate.toString())
+                        print("dateInf", dateInf.toString())
+                    }
+                    if(data != null){
+                        if(data.startDate.before(dateInf) && data.startDate.after(dateInfAfter)){
+                            print("期間外", data.id.toString())
+                        }else{
+                            print("期間内", data.id.toString())
+                            if(sta_id == 0L){
+                                sta_id = data.id
+                                end_id = data.id
+
+                            }else{
+                                end_id = data.id
+                            }
+
+                        }
+                    }
+                }
+                print("sta_id", sta_id.toString())
+                print("end_id", end_id.toString())
+                for(id in 1L .. end_id){
+                    var data = database.getData(id)
+                    var ns = data?.naturalSpeed
+                    if(ns != null){
+                        print("ns", ns.toString())
+                        nsList.add(ns)
+                    }
+                }
+                // この速度以下になったら通知する
+                alertSpeed = calculation.calcAlertSpeed(nsList, 1)
+                print("alertSpeed", alertSpeed.toString())
+                database.saveALS(alertSpeed, null, null)
+
+            }
             // 測定を終了する日を取得
             dateInfAfter = database.getDateInfAfter()
             // t_dateOfInflatedに表示するテキストを代入
@@ -209,7 +254,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
 
             // データベースに空気を入れた日付を保存
-            database.saveDateInf(dateInf!!, dateInfAfter!!)
+            database.saveALS(null, dateInf!!, dateInfAfter!!)
             // データベースに保存されている
             setStatus(binding)
 
@@ -220,7 +265,7 @@ class MainActivity : AppCompatActivity(), LocationListener {
     // t_statusに表示するテキストを取得
     private fun setStatus(binding: ActivityMainBinding){
         // 現在の日付
-        val dateNow = Date()
+        var dateNow = Date()
         statusText = "状態："
 
         // 空気を入れてから1週間経っていない時
@@ -303,40 +348,8 @@ class MainActivity : AppCompatActivity(), LocationListener {
             resultText = "現在計測期間中"
 
         }else{
-            alertSpeed = database.getAS()
-            if(alertSpeed == null){
-                // 今までの自然に漕いでいた時の速度を取得
-                nsList.clear()
-                var sta_id = 0L
-                var end_id = 0L
-                val max_id = database.getMaxId()
-                for(id in 1L..max_id){
-                    var data = database.getData(id)
-                    if(data != null){
-                        if(data.startDate.before(dateInf) && data.startDate.after(dateInfAfter)){
-                            if(sta_id == 0L){
-                                sta_id = data.id
-                                end_id = data.id
-
-                            }else{
-                                end_id = data.id
-                            }
-                        }
-                    }
-                }
-                for(id in 1L .. end_id){
-                    var data = database.getData(id)
-                    var ns = data?.naturalSpeed
-                    if(ns != null){
-                        nsList.add(ns)
-                    }
-                }
-                // この速度以下になったら通知する
-                alertSpeed = calculation.calcAlertSpeed(nsList, 1)
-                print("alertSpeed", alertSpeed.toString())
-                database.saveAS(alertSpeed)
-
-            }
+            alertSpeed = database.getALS()
+            alertSpeed = 18.2
 
             if(naturalSpeed >= alertSpeed){
                 resultText = "タイヤの空気圧に\n問題なし！"
@@ -366,18 +379,19 @@ class MainActivity : AppCompatActivity(), LocationListener {
 
             // 計測データが2つ以上ある時
             if(latitudeArr.size >= 2){
+                // 距離を計算
+                var dis = FloatArray(3)
+                Location.distanceBetween(latitudeArr.get(latitudeArr.size-2)!!, longitudeArr.get(longitudeArr.size-2)!!,
+                    latitudeArr.get(latitudeArr.size-1)!!, longitudeArr.get(longitudeArr.size-1)!!, dis)
                 // 速度を計算
-                val speed = calculation.calcSpeed(
-                    latitudeArr.get(latitudeArr.size-1)!!,
-                    longitudeArr.get(longitudeArr.size-1)!!,
-                    timeArr.get(timeArr.size-1)!!,
-                    latitudeArr.get(latitudeArr.size-2)!!,
-                    longitudeArr.get(longitudeArr.size-2)!!,
-                    timeArr.get(timeArr.size-2)!!)
+                var speed = dis[0]*3.6
+                var roundSpeed = Math.round(speed * 10.0).toDouble() / 10
 
+                roundSpeed = calculation.judgeSpeed(roundSpeed)
+                roundSpeed = 20.5
                 // 速度を保存
-                speedArr.add(speed)
-                print("speed", speed.toString())
+                speedArr.add(roundSpeed)
+                print("speed", roundSpeed.toString())
 
                 dataText = "緯度：" + latitudeArr.get(latitudeArr.size-1) + "°\n" +
                         "経度：" + longitudeArr.get(longitudeArr.size-1) + "°\n" +

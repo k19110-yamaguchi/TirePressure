@@ -88,17 +88,27 @@ class Database {
 
     // AlertSpeed関係
     // 通知速度を保存
-    fun saveAS(als : Double){
-
+    fun saveALS(als : Double?, dateInf: Date?, dateInfAfter: Date?){
         realm.executeTransaction{ db: Realm ->
-            val dataList = db.createObject<AlertSpeed>(1L)
-            dataList.als = als
-
+            var dataList = realm.where<AlertSpeed>().equalTo("id", 1L).findFirst()
+            if(dataList == null){
+                dataList = db.createObject<AlertSpeed>(1L)
+            }
+            if(als != null){
+                dataList.als = als
+            }
+            if(dateInf != null){
+                dataList.dateInf = dateInf
+            }
+            if(dateInfAfter != null){
+                dataList.dateInfAfter = dateInfAfter
+            }
         }
     }
 
     // 通知速度を取得
-    fun getAS(): Double{
+    fun getALS(): Double{
+        create()
         var data = realm.where<AlertSpeed>().equalTo("id", 1L).findFirst()
         return data!!.als
 
@@ -109,16 +119,6 @@ class Database {
         var  als = realm.where<AlertSpeed>().findAll()
         realm.executeTransaction{
             als?.deleteAllFromRealm()
-
-        }
-    }
-
-    // 空気を入れた日と測定終了日を保存
-    fun saveDateInf(dateInf: Date, dateInfAfter: Date){
-        realm.executeTransaction{ db: Realm ->
-            val dataList = db.createObject<AlertSpeed>(1L)
-            dataList.dateInf = dateInf
-            dataList.dateInfAfter = dateInfAfter
 
         }
     }

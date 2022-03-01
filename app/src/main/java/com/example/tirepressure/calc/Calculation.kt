@@ -1,5 +1,6 @@
 package com.example.tirepressure
 
+import android.util.Log
 import io.realm.RealmList
 import java.util.*
 
@@ -7,6 +8,10 @@ class Calculation {
     private val latDistance = 91.2877855
     private val lonDistance = 110.9964837
     private val truncateSpeed = 2.0
+    fun print(tag: String, mes: String){
+        Log.d(tag, mes)
+    }
+
 
     fun calcSpeed(lat1: Double, lon1: Double, t1: Long,
                   lat2: Double, lon2: Double, t2: Long): Double {
@@ -101,10 +106,11 @@ class Calculation {
     // 平均を求める
     fun calcAve(list: RealmList<Double>): Double{
         var sum = 0.0
-        for(i in 1..list.size-1){
+        for(i in 0..list.size-1){
             sum += list[i]!!
 
         }
+        print("sum", sum.toString())
         var ave = sum / list.size
         return ave
 
@@ -113,7 +119,7 @@ class Calculation {
     // 標準偏差を求める
     fun calcSd(ave: Double, list: RealmList<Double>): Double{
         var sum = 0.0
-        for(i in 1..list.size-1){
+        for(i in 0..list.size-1){
             sum += Math.pow((list[i]!! - ave), 2.0)
 
         }
@@ -129,11 +135,14 @@ class Calculation {
 
         if (!test) {
             val ave = calcAve(ns)
+            print("ave", ave.toString())
             val sd = calcSd(ave, ns)
+            print("sd", sd.toString())
             als = ave - (n * sd)
             als = Math.round(als * 10.0).toDouble() / 10
             var msg = n.toString() + "σ: " + (n * sd)
         }
+        print("als", als.toString())
 
         return als
     }
@@ -161,6 +170,18 @@ class Calculation {
         var dateNow = Date()
         // 空気を入れてから1週間経った時（true）
         return dateNow.after(dateInfAfter)
+
+    }
+
+    fun judgeSpeed(s: Double): Double{
+        val firstDec = s * 10 % 10
+        var judgeS = s
+        if (firstDec < 5) {
+            judgeS = (judgeS * 10 - firstDec) / 10
+        } else {
+            judgeS = (judgeS * 10 - firstDec + 5) / 10
+        }
+        return judgeS
 
     }
 }
